@@ -24,7 +24,7 @@ artist_table_create = ("""
         name varchar,
         location varchar,
         latitude double precision,
-        longitude double precision
+        longitude double precision   
     )
 """)
 
@@ -52,7 +52,7 @@ song_table_create = ("""
 
 songplay_table_create = ("""
     CREATE TABLE IF NOT EXISTS songplays(
-        songplay_id varchar PRIMARY KEY NOT NULL,
+        songplay_id SERIAL PRIMARY KEY NOT NULL,
         start_time timestamp,
         user_id int REFERENCES users(user_id),
         level varchar,
@@ -68,6 +68,8 @@ songplay_table_create = ("""
 # INSERT RECORDS
 
 songplay_table_insert = ("""
+    INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 """)
 
 user_table_insert = ("""
@@ -96,6 +98,13 @@ time_table_insert = ("""
 # FIND SONGS
 
 song_select = ("""
+SELECT song_id,
+       artists.artist_id,
+       duration
+ FROM songs 
+ INNER JOIN artists
+ ON songs.artist_id = artists.artist_id
+
 """)
 
 # QUERY LISTS
