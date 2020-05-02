@@ -12,11 +12,11 @@ They've collected some data about songs and user activity on this app. All their
 
 ### Objectives
 
-Build a ETL pipeline using Python: from JSON files to Postgres and define fact and dimension tables for a star schema.
+Build a ETL pipeline using Python from JSON files to Postgres and define fact and dimension tables for a star schema.
 
 ### Datasets
 
-- **Songs**: is a subset of a real data from [Million Song Dataset](http://millionsongdataset.com/). The file metadata looks like:
+- **Songs**: is a subset of a real data from [Million Song Dataset](http://millionsongdataset.com/). The file looks like:
 
 ```
  {"num_songs": 1, "artist_id": "ARJIE2Y1187B994AB7", "artist_latitude": null, "artist_longitude": null, "artist_location": "", "artist_name": "Line Renaud", "song_id": "SOUPIRU12A6D4FA1E1", "title": "Der Kleine Dompfaff", "duration": 152.92036, "year": 0} </code>
@@ -27,6 +27,34 @@ Build a ETL pipeline using Python: from JSON files to Postgres and define fact a
 ```
  {"artist":"Girl Talk","auth":"Logged In","firstName":"Kaylee","gender":"F","itemInSession":8,"lastName":"Summers","length":160.15628,"level":"free","location":"Phoenix-Mesa-Scottsdale, AZ","method":"PUT","page":"NextSong","registration":1540344794796.0,"sessionId":139,"song":"Once again","status":200,"ts":1541107734796,"userAgent":"\"Mozilla\/5.0 (Windows NT 6.1; WOW64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/35.0.1916.153 Safari\/537.36\"","userId":"8"}
  ```
+
+ ### Data Modeling
+
+ A Star Schema was created optmized for queries with both datasets.
+
+ - **Fact Table**: 
+
+   - **songplays**: records in log data with song plays(records with page ```NextSong```). Columns: *song_play_id*, *start_time*, *user_id*, *level*, *song_id*, *artist_id*, *session_id*, *location*, *user_agent*.
+
+- **Dimension Tables**:
+
+   - **users**: users in the app. Columns: *user_id*, *first_name*, *last_name*, *gender*, *level*.
+
+   - **songs**: users in the app. Columns: *song_id*, *artist_id*, *year*, *duration*.
+
+   - **artists**: users in the app. Columns: *artist_id*, *name*, *location*, *latitude*, *longitude*.
+
+   - **time**: timestamps of records in songplays. Columns: *start_time*, *hour*, *day*, *week*, *month*, *year*, *weekday*.
+
+### Execution Steps
+
+
+
+
+
+
+
+
 
 
 
