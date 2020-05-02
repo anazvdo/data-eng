@@ -82,6 +82,8 @@ user_table_insert = ("""
 song_table_insert = ("""
     INSERT INTO songs (song_id, title, artist_id, year, duration)
     VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT (song_id)
+    DO NOTHING
 """)
 
 artist_table_insert = ("""
@@ -95,18 +97,19 @@ artist_table_insert = ("""
 time_table_insert = ("""
     INSERT INTO time (start_time, hour, day, week, month, year, weekday)
     VALUES (%s, %s, %s, %s, %s, %s, %s)
+    ON CONFLICT (start_time)
+    DO NOTHING
 """)
 
 # FIND SONGS
 
 song_select = ("""
 SELECT song_id,
-       artists.artist_id,
-       duration
+       artists.artist_id
  FROM songs 
  INNER JOIN artists
  ON songs.artist_id = artists.artist_id
-
+ WHERE (songs.title = %s AND artists.name = %s AND songs.duration = %s)
 """)
 
 # QUERY LISTS

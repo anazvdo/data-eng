@@ -14,7 +14,6 @@ def process_song_file(cur, filepath):
     artist_data = df[['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']]
     artist_data = artist_data.values[0].tolist()    
     cur.execute(artist_table_insert, artist_data)
-    print('lalala')
 
     # insert song record
     song_data = df[['song_id', 'title', 'artist_id', 'year', 'duration']]  
@@ -52,8 +51,13 @@ def process_log_file(cur, filepath):
     for index, row in df.iterrows():
         
         # get songid and artistid from song and artist tables
-        results = cur.execute(song_select, (row.song, row.artist, row.length))
-        songid, artistid = results if results else None, None
+        cur.execute(song_select, (row.song, row.artist, row.length))
+        results = cur.fetchone()
+        
+        if results:
+            songid, artistid = results
+        else:
+            songid, artistid = None, None        
 
         # insert songplay record
         songplay_data = (row.ts, row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent)
@@ -83,7 +87,7 @@ def main():
     conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
     cur = conn.cursor()
 
-    #process_data(cur, conn, filepath='data/song_data', func=process_song_file)
+    process_data(cur, conn, filepath='data/song_data', func=process_song_file)
     process_data(cur, conn, filepath='data/log_data', func=process_log_file)
 
     conn.close()
