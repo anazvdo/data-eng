@@ -78,7 +78,7 @@ python create_tables.py
 python etl.py
 ```
 
-3. Check your results based in queries in ```test.ipynb ```.
+3. Check your tables based on queries results in ```test.ipynb ```
 
 
 
