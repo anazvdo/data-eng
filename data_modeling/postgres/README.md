@@ -46,15 +46,12 @@ Build an ETL pipeline using Python from JSON files to Postgres and define fact a
 
    - **time**: timestamps of records in songplays. Columns: *start_time*, *hour*, *day*, *week*, *month*, *year*, *weekday*.
 
-### Execution Steps
+### Files Description
 1. ```\data\``` contains all datasets used in this project.
 
-2. Run ```create_tables.py``` to drop and create database sparkifydb and tables in Star Schema.  
- You can also run this file to reset tables before ETL scripts:
+2. ```create_tables.py``` to drop and create database sparkifydb and tables in Star Schema.  
+ You can also run this file to reset tables before ETL scripts.
 
-```
-python create_tables.py
-```
 **Assuming that you have a postgres server running in localhost as the file shows. You can change *host, dbname, user and password* to work fine in your local machine.**
 
 3. The ```etl.ipynb ``` file reads a single file from each ```song_data``` and ```log_data```. It loads data into our tales as a test. You can use, for example, Jupyter Notebook or Visual Code to open this file.
@@ -67,6 +64,21 @@ python create_tables.py
 ```
 python etl.py
 ```
+
+### Execution Steps
+
+1. From inside *data-eng/data_modeling/postgres* directory, run ```create_tables.py``` in console:
+
+```
+python create_tables.py
+```
+
+2. Then, you can run ETL process:
+```
+python etl.py
+```
+
+3. Check your results based in queries in ```test.ipynb ```.
 
 
 
