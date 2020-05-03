@@ -44,7 +44,7 @@ song_table_create = ("""
     CREATE TABLE IF NOT EXISTS songs(
         song_id varchar PRIMARY KEY NOT NULL,
         title varchar,
-        artist_id varchar REFERENCES artists(artist_id),
+        artist_id varchar REFERENCES artists(artist_id) NOT NULL,
         year int,
         duration double precision
     )
