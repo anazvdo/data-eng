@@ -47,10 +47,10 @@ def create_tables(cur, conn):
 
 def main():
     """
-        - Drops database sparkify
-        - Creates database sparkify
-        - Drops all sparkify tables
-        - Creates all sparkify tables
+        - Drops database sparkifydb
+        - Creates database sparkifydb
+        - Drops all sparkifydb tables
+        - Creates all sparkifydb tables
         - Closes postgres connection 
     """
     cur, conn = create_database()
