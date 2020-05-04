@@ -6,6 +6,13 @@ from sql_queries import *
 
 
 def process_song_file(cur, filepath):
+    """
+      Processes an entire song file, puts this into a dataframe to select 
+      needed columns and insert rows into song and artist tables.
+
+      'cur': psycopg2 cursor from sparkifydb
+      'filepath': string with filepath of song file      
+    """
     
     # open song file
     df = pd.read_json(filepath, lines=True)
@@ -22,6 +29,14 @@ def process_song_file(cur, filepath):
     
 
 def process_log_file(cur, filepath):
+    """
+      Processes an entire log file, puts this into a dataframe to select 
+      needed columns, filters pages with 'NextSong', transforms timestamps 
+      into datetime values and insert rows into time, user and songplay tables.
+
+      'cur': psycopg2 cursor from sparkifydb
+      'filepath': string with filepath of log file      
+    """
     # open log file
     df = pd.read_json(filepath, lines=True)
 
@@ -65,6 +80,15 @@ def process_log_file(cur, filepath):
 
 
 def process_data(cur, conn, filepath, func):
+    """
+        Gets all files by walking through directories(given an initial filepath) 
+        and call a specific function to read the data inside.
+
+        'cur': psycopg2 cursor from sparkifydb
+        'conn': psycopg2 connection to sparkifydb
+        'filepath': string with filepath of song or log file
+        'func': function to be called to process and read data from file
+    """
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
@@ -84,6 +108,11 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
+    """
+        Using sparkifydb connection, the ETL process is done here:
+        - Process data from song files to be transformed and loaded into database
+        - Process data from log files to be transformed and loaded into database
+    """
     conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
     cur = conn.cursor()
 
