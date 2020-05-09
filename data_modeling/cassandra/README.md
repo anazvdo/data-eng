@@ -13,7 +13,7 @@ The dataset is inside <code>event_data</code> directory partitioned by date.
 
 ### Project Template
 
-A *.ipynb* is created with ETL process in this project.
+The file named *Project_1B_ Project_Template.ipynb* is created with ETL process in this project.
 
 **Part I** aggregates all csv files into one single csv file(denormalized dataset).
 
