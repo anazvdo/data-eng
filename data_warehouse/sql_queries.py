@@ -58,11 +58,11 @@ staging_songs_table_create = ("""
 songplay_table_create = ("""
     CREATE TABLE IF NOT EXISTS songplays(
         songplay_id int IDENTITY(0,1) PRIMARY KEY NOT NULL,
-        start_time timestamp,
-        user_id int,
+        start_time timestamp NOT NULL REFERENCES time(start_time),
+        user_id int NOT NULL REFERENCES users(user_id),
         level varchar,
-        song_id varchar,
-        artist_id varchar,
+        song_id varchar NOT NULL REFERENCES songs(song_id),
+        artist_id varchar NOT NULL REFERENCES artists(artist_id),
         session_id int,
         location varchar,
         user_agent varchar
@@ -83,7 +83,7 @@ song_table_create = ("""
     CREATE TABLE IF NOT EXISTS songs(
         song_id varchar PRIMARY KEY NOT NULL,
         title varchar,
-        artist_id varchar,
+        artist_id varchar NOT NULL REFERENCES artists(artist_id),
         year int,
         duration double precision
     )
@@ -204,7 +204,7 @@ INSERT INTO time(
 
 # QUERY LISTS
 
-create_table_queries = [staging_events_table_create, staging_songs_table_create, songplay_table_create, user_table_create, song_table_create, artist_table_create, time_table_create]
+create_table_queries = [staging_events_table_create, staging_songs_table_create, user_table_create, artist_table_create, song_table_create, time_table_create, songplay_table_create]
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 insert_table_queries = [user_table_insert, song_table_insert, artist_table_insert, time_table_insert, songplay_table_insert]
