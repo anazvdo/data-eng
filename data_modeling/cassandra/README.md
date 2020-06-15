@@ -1,4 +1,4 @@
-## Data Modeling with Postgres - Sparkify 
+## Data Modeling with Cassandra - Sparkify 
 
 ### Introduction 
 
