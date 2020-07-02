@@ -7,7 +7,7 @@ They've collected some data about songs and user activity on this app. All their
 
 ### Objectives
 
-<i>Sparkify</i> needs to build an ETL pipeline that extracts their data from S3, processes them using Spark, aand loads the data back into S3 as a set of dimensional tables. 
+<i>Sparkify</i> needs to build an ETL pipeline that extracts their data from S3, processes them using Spark, and loads the data back into S3 as a set of dimensional tables. 
 
 ### Datasets
 
