@@ -4,7 +4,7 @@ from airflow.models import Variable
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
-from airflow.contrib.operators.emr_add_steps_operator import EmrAddStepsOperator
+from airflow.operators.custom_emr_add_steps_plugin import CustomEmrAddStepsOperator
 from airflow.contrib.sensors.emr_step_sensor import EmrStepSensor
 
 AWS_KEY = os.environ.get('AWS_KEY')
@@ -21,6 +21,7 @@ default_args = {
 
 
 JOB_FLOW_OVERRIDES = {
+'LogUri': 's3://emr-logs/',
 'Instances': {
     'InstanceGroups': [
         {
@@ -29,23 +30,24 @@ JOB_FLOW_OVERRIDES = {
             'InstanceType': 'm4.large',
             'InstanceCount': 1
         }
-    ]},
+        
+    ],
+    'TerminationProtected': False,
+    'KeepJobFlowAliveWhenNoSteps' : True
+    },
     'JobFlowRole': 'EMR_EC2_DefaultRole',
     'ServiceRole': 'EMR_DefaultRole',
     "Applications": [ 
       { 
-         "Name": "spark" #adicionar apps restantes
-      }
+         "Name": "spark" 
+      },
+      {
+          "Name": "zeppelin"
+      },
    ],
    'ReleaseLabel': "emr-5.30.1",
-    'Name':'airflow-monthly_agg_custom',
-
-            'BootstrapActions':[{
-            'Name': 'Install',
-            'ScriptBootstrapAction': {
-                'Path': 's3://dep-buck/bootstrap.sh'
-            }
-        }],
+    'Name':'airflow-emr',
+    'BootstrapActions':[],
     'Configurations': [
   {
      "Classification": "spark-env",
@@ -81,26 +83,27 @@ dag = DAG('udac_example_dag',
           catchup=False
         )
 
-start_operator = EmrCreateJobFlowOperator(task_id='Begin_execution',  
+start_operator = EmrCreateJobFlowOperator(task_id='start_operator',  
                                 dag=dag,
-                                aws_conn_id='aws_educate',
+                                aws_conn_id='aws_udacity',
                                 emr_conn_id='aws_emr',
                                 job_flow_overrides=JOB_FLOW_OVERRIDES,
-                                region_name='us-east-1')
+                                region_name='us-west-2')
 
-step_adder = EmrAddStepsOperator(
+step_adder = CustomEmrAddStepsOperator(
     task_id='add_steps',
-    job_flow_id="{{ task_instance.xcom_pull('start_operator', key='return_value') }}",
-    aws_conn_id='aws_educate',
+    job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
+    aws_conn_id='aws_udacity',
     steps=step,
+    do_xcom_push=True,
     dag=dag
 )
 
 step_sensor = EmrStepSensor(
   task_id = 'step_sensor',
   job_flow_id="{{ task_instance.xcom_pull('start_operator', key='return_value') }}",
-  step_id = "{{ task_instance.xcom_pull('step_adder', key='return_value')[0] }}",
-  aws_conn_id='aws_educate',
+  step_id = "{{ task_instance.xcom_pull('step_adder', key='return_value')}}",
+  aws_conn_id='aws_udacity',
   dag=dag
 )
 
