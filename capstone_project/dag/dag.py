@@ -21,7 +21,7 @@ default_args = {
 
 
 JOB_FLOW_OVERRIDES = {
-'LogUri': 's3://emr-logs/',
+'LogUri': 's3://emr-logs-udacity/',
 'Instances': {
     'InstanceGroups': [
         {
@@ -47,7 +47,14 @@ JOB_FLOW_OVERRIDES = {
    ],
    'ReleaseLabel': "emr-5.30.1",
     'Name':'airflow-emr',
-    'BootstrapActions':[],
+    'BootstrapActions': [ 
+      { 
+         "Name": "copy-file",
+         "ScriptBootstrapAction": { 
+           "Path": "s3://scripts-emr/cp.sh"
+         }
+      }
+   ],
     'Configurations': [
   {
      "Classification": "spark-env",
@@ -64,13 +71,13 @@ JOB_FLOW_OVERRIDES = {
 ]
 }
 
-step_args = ["spark-submit", 's3://scripts-emr/anoca.py']
+step_args = ["spark-submit --master yarn", 'anoca.py']
 
 time = datetime.now()
 step = [{"Name": "what_you_do-" + time.strftime("%Y%m%d-%H:%M"),
             'ActionOnFailure': 'CANCEL_AND_WAIT',
             'HadoopJarStep': {
-                'Jar': 's3n://elasticmapreduce/libs/script-runner/script-runner.jar',
+                'Jar': 's3n://us-west-2.elasticmapreduce/libs/script-runner/script-runner.jar',
                 'Args': step_args
             }
         }]
@@ -88,7 +95,7 @@ start_operator = EmrCreateJobFlowOperator(task_id='start_operator',
                                 aws_conn_id='aws_udacity',
                                 emr_conn_id='aws_emr',
                                 job_flow_overrides=JOB_FLOW_OVERRIDES,
-                                region_name='us-west-2')
+                                region_name='us-east-1')
 
 step_adder = CustomEmrAddStepsOperator(
     task_id='add_steps',
