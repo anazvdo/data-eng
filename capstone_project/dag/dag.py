@@ -5,7 +5,7 @@ from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
 from airflow.operators.custom_emr_add_steps_plugin import CustomAddStepsOperator
-from airflow.contrib.sensors.emr_step_sensor import EmrStepSensor
+from airflow.operators.custom_emr_step_state_plugin import CustomStepStateOperator
 
 AWS_KEY = os.environ.get('AWS_KEY')
 AWS_SECRET = os.environ.get('AWS_SECRET')
@@ -110,11 +110,12 @@ step_adder = CustomAddStepsOperator(
     dag=dag
 )
 
-step_sensor = EmrStepSensor(
+step_sensor = CustomStepStateOperator(
   task_id = 'step_sensor',
-  job_flow_id="{{ task_instance.xcom_pull('start_operator', key='return_value') }}",
-  step_id = "{{ task_instance.xcom_pull('step_adder', key='return_value')}}",
+  job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
+  step_id = "{{ task_instance.xcom_pull(task_ids='add_steps', key='return_value')}}",
   aws_conn_id='aws_udacity',
+  region_name='us-east-1',
   dag=dag
 )
 
