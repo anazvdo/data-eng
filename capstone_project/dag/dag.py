@@ -4,7 +4,7 @@ from airflow.models import Variable
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
-from airflow.operators.custom_emr_add_steps_plugin import CustomEmrAddStepsOperator
+from airflow.operators.custom_emr_add_steps_plugin import CustomAddStepsOperator
 from airflow.contrib.sensors.emr_step_sensor import EmrStepSensor
 
 AWS_KEY = os.environ.get('AWS_KEY')
@@ -23,6 +23,7 @@ default_args = {
 JOB_FLOW_OVERRIDES = {
 'LogUri': 's3://emr-logs-udacity/',
 'Instances': {
+    'Ec2KeyName': 'udacity',
     'InstanceGroups': [
         {
 
@@ -74,13 +75,16 @@ JOB_FLOW_OVERRIDES = {
 step_args = ["spark-submit --master yarn", 'anoca.py']
 
 time = datetime.now()
-step = [{"Name": "what_you_do-" + time.strftime("%Y%m%d-%H:%M"),
+step = [
+        {
+            'Name': 'run-py-'+time.strftime('%Y%m%d_%H%M%S'),
             'ActionOnFailure': 'CANCEL_AND_WAIT',
             'HadoopJarStep': {
-                'Jar': 's3n://us-west-2.elasticmapreduce/libs/script-runner/script-runner.jar',
-                'Args': step_args
+                'Jar': '/var/lib/aws/emr/step-runner/hadoop-jars/command-runner.jar',
+                'Args':  ["spark-submit", "s3://scripts-emr/anoca.py"]
             }
-        }]
+        },
+    ]
 
 dag = DAG('udac_example_dag',
           default_args=default_args,
@@ -97,12 +101,12 @@ start_operator = EmrCreateJobFlowOperator(task_id='start_operator',
                                 job_flow_overrides=JOB_FLOW_OVERRIDES,
                                 region_name='us-east-1')
 
-step_adder = CustomEmrAddStepsOperator(
+step_adder = CustomAddStepsOperator(
     task_id='add_steps',
     job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
     aws_conn_id='aws_udacity',
+    region_name='us-east-1',
     steps=step,
-    do_xcom_push=True,
     dag=dag
 )
 
