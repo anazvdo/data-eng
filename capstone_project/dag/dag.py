@@ -6,10 +6,10 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.contrib.operators.emr_create_job_flow_operator import EmrCreateJobFlowOperator
 from airflow.operators.custom_emr_add_steps_plugin import CustomAddStepsOperator
 from airflow.operators.custom_emr_step_state_plugin import CustomStepStateOperator
+from airflow.contrib.operators.s3_copy_object_operator import S3CopyObjectOperator
+from airflow.operators.upload_file_to_s3 import UploadFileToS3Operator
 
-AWS_KEY = os.environ.get('AWS_KEY')
-AWS_SECRET = os.environ.get('AWS_SECRET')
-redshift_conn_id = Variable.get('redshift_conn_id')
+FILE_PATH = os.path.dirname(os.path.realpath(__file__)) + '/'
 
 default_args = {
     'owner': 'Ana Caroline Reis',
@@ -49,12 +49,7 @@ JOB_FLOW_OVERRIDES = {
    'ReleaseLabel': "emr-5.30.1",
     'Name':'airflow-emr',
     'BootstrapActions': [ 
-      { 
-         "Name": "copy-file",
-         "ScriptBootstrapAction": { 
-           "Path": "s3://scripts-emr/cp.sh"
-         }
-      }
+      
    ],
     'Configurations': [
   {
@@ -63,7 +58,8 @@ JOB_FLOW_OVERRIDES = {
        {
          "Classification": "export",
          "Properties": {
-            "PYSPARK_PYTHON": "/usr/bin/python3"
+            "PYSPARK_PYTHON": "/usr/bin/python3",
+            
           }
        }
     ]
@@ -81,7 +77,7 @@ step = [
             'ActionOnFailure': 'CANCEL_AND_WAIT',
             'HadoopJarStep': {
                 'Jar': '/var/lib/aws/emr/step-runner/hadoop-jars/command-runner.jar',
-                'Args':  ["spark-submit", "s3://scripts-emr/anoca.py"]
+                'Args':  ["spark-submit", "s3://scripts-emr/etl.py"]
             }
         },
     ]
@@ -100,6 +96,15 @@ start_operator = EmrCreateJobFlowOperator(task_id='start_operator',
                                 emr_conn_id='aws_emr',
                                 job_flow_overrides=JOB_FLOW_OVERRIDES,
                                 region_name='us-east-1')
+
+copy_etl_to_s3 = UploadFileToS3Operator(task_id='copy_etl_to_s3',
+                                        dag=dag,
+                                        aws_conn_id='aws_udacity',
+                                        local_path=FILE_PATH+'etl.py',
+                                        region_name='us-east-1',
+                                        s3_bucket_name='scripts-emr',
+                                        s3_prefix='etl.py'
+                )
 
 step_adder = CustomAddStepsOperator(
     task_id='add_steps',
@@ -121,4 +126,4 @@ step_sensor = CustomStepStateOperator(
 
 
 
-start_operator >> step_adder >> step_sensor
+start_operator >> copy_etl_to_s3 >> step_adder >> step_sensor
