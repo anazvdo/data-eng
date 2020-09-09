@@ -9,21 +9,25 @@ from botocore.exceptions import ClientError
 
 
 class AthenaQualityChecksOperator(BaseOperator):
+    template_fields=['query']
+
     ui_color = '#ff007f'
     @apply_defaults
     def __init__(self,
             aws_conn_id,
             region_name,
-            local_path,
-            s3_bucket_name,
-            s3_prefix,
+            output_location,
+            database,
+            query,
+            expected_value,
             *args, **kwargs):
-        super(UploadFileToS3Operator, self).__init__(*args, **kwargs)
+        super(AthenaQualityChecksOperator, self).__init__(*args, **kwargs)
         self.aws_conn_id = aws_conn_id
         self.region_name = region_name
-        self.local_path = local_path
-        self.s3_bucket_name = s3_bucket_name
-        self.s3_prefix = s3_prefix
+        self.output_location = output_location
+        self.database = database
+        self.query = query
+        self.expected_value = expected_value
     
     def create_client(self):
         extras = BaseHook.get_connection(self.aws_conn_id).extra_dejson
@@ -32,29 +36,43 @@ class AthenaQualityChecksOperator(BaseOperator):
             aws_session_token = extras['aws_session_token']
         key_id = BaseHook.get_connection(self.aws_conn_id).login
         secret_key = BaseHook.get_connection(self.aws_conn_id).password
-        client = boto3.client('s3', aws_access_key_id=key_id,
+        client = boto3.client('athena', aws_access_key_id=key_id,
                                     aws_secret_access_key=secret_key,
                                     aws_session_token=aws_session_token,
                                     region_name=self.region_name)
-        logging.info("S3 Client is created")
+        logging.info("Athena Client is created")
         return client
+
+    def start_query(client, self):
+        response = client.start_query_execution(
+                            QueryString=self.query,
+                            QueryExecutionContext={
+                                'Database': self.database
+                            },
+                            ResultConfiguration={
+                                'OutputLocation': self.output_location,
+                            }
+        )
+        return response.get('QueryExecutionId')
 
     def execute(self, context):
         client = self.create_client()
-        # Upload the file
-        try:
-            logging.info(self.local_path)
-            logging.info(self.s3_bucket_name)
-            logging.info(self.s3_prefix)
-            response = client.upload_file(self.local_path, self.s3_bucket_name, self.s3_prefix)
-        except ClientError as e:
-            logging.error(e)
-            raise ValueError
-        return True
+        
+        #Get query results
+        query_id = self.start_query(client)
+        response = client.get_query_execution(QueryExecutionId=query_id)
+        response = client.get_query_results(QueryExecutionId=query_id)
+
+        result = response.get('ResultSet').get('Rows')[1].get('Data')[0].get('VarCharValue')
+
+        if result != self.expected_value:
+            raise ValueError(f'Error: Data Quality Check. Query:{self.query} Result:{result} Expected:{self.expected_value}')
+        else:
+            logging.info("Data Quaity OK")
         
 
 
 # Defining the plugin class
-class UploadFileToS3Plugin(AirflowPlugin):
-    name = "upload_file_to_s3"
-    operators = [UploadFileToS3Operator]
+class AthenaQualityChecksPlugin(AirflowPlugin):
+    name = "athena_quality_checks"
+    operators = [AthenaQualityChecksOperator]
