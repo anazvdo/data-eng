@@ -6,8 +6,8 @@ SELECT
 FROM
     (
         SELECT
-            count(*) total,
-            count(distinct concat(reviewer_id, product_id)) as distinct_values
+            count(*) AS total,
+            count(distinct timestamp) AS distinct_values
         FROM
-            ratings
+            time
     )

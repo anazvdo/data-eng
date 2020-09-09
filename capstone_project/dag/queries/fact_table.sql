@@ -1,3 +1,4 @@
+INSERT INTO pet_supplies.product_ratings
 SELECT p.product_id,
          p.title,
          r.rating,

@@ -6,8 +6,8 @@ SELECT
 FROM
     (
         SELECT
-            count(*),
-            count(distinct category_id)
+            count(*) as total,
+            count(distinct category_id) as distinct_values
         FROM
             category
     )

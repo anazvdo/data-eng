@@ -9,6 +9,8 @@ from airflow.operators.custom_emr_step_state_plugin import CustomStepStateOperat
 from airflow.contrib.operators.s3_copy_object_operator import S3CopyObjectOperator
 from airflow.operators.upload_file_to_s3 import UploadFileToS3Operator
 from airflow.operators.athena_quality_checks import AthenaQualityChecksOperator
+from airflow.contrib.operators.aws_athena_operator import AWSAthenaOperator
+
 
 FILE_PATH = os.path.dirname(os.path.realpath(__file__)) + '/'
 
@@ -90,54 +92,73 @@ dag = DAG('udac_example_dag',
 		  catchup=False
 		  )
 
-#start_operator = EmrCreateJobFlowOperator(task_id='start_operator',
-#										  dag=dag,
-#										  aws_conn_id='aws_udacity',
-#										  emr_conn_id='aws_emr',
-#										  job_flow_overrides=JOB_FLOW_OVERRIDES,
-#										  region_name='us-east-1')
-#
-#copy_etl_to_s3 = UploadFileToS3Operator(task_id='copy_etl_to_s3',
-#										dag=dag,
-#										aws_conn_id='aws_udacity',
-#										local_path=FILE_PATH+'etl.py',
-#										region_name='us-east-1',
-#										s3_bucket_name='scripts-emr',
-#										s3_prefix='etl.py'
-#										)
-#
-#step_adder = CustomAddStepsOperator(
-#	task_id='add_steps',
-#	job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
-#	aws_conn_id='aws_udacity',
-#	region_name='us-east-1',
-#	steps=step,
-#	dag=dag
-#)
-#
-#step_sensor = CustomStepStateOperator(
-#	task_id='step_sensor',
-#	job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
-#	step_id="{{ task_instance.xcom_pull(task_ids='add_steps', key='return_value')}}",
-#	aws_conn_id='aws_udacity',
-#	region_name='us-east-1',
-#	dag=dag
-#)
-#start_operator >> copy_etl_to_s3 >> step_adder >> step_sensor
+start_operator = EmrCreateJobFlowOperator(task_id='start_operator',
+										  dag=dag,
+										  aws_conn_id='aws_udacity',
+										  emr_conn_id='aws_emr',
+										  job_flow_overrides=JOB_FLOW_OVERRIDES,
+										  region_name='us-east-1')
 
-FACT_TABLES = ['brand', 'category',
-						'main_category', 'time', 'ratings']
+copy_etl_to_s3 = UploadFileToS3Operator(task_id='copy_etl_to_s3',
+										dag=dag,
+										aws_conn_id='aws_udacity',
+										local_path=FILE_PATH+'etl.py',
+										region_name='us-east-1',
+										s3_bucket_name='scripts-emr',
+										s3_prefix='etl.py'
+										)
 
-for table in FACT_TABLES:
-	check_distinct_data = AthenaQualityChecksOperator(task_id='check_distinct_data_'+table,
+step_adder = CustomAddStepsOperator(
+	task_id='add_steps',
+	job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
+	aws_conn_id='aws_udacity',
+	region_name='us-east-1',
+	steps=step,
+	dag=dag
+)
+
+step_sensor = CustomStepStateOperator(
+	task_id='step_sensor',
+	job_flow_id="{{ task_instance.xcom_pull(task_ids='start_operator', key='return_value') }}",
+	step_id="{{ task_instance.xcom_pull(task_ids='add_steps', key='return_value')}}",
+	aws_conn_id='aws_udacity',
+	region_name='us-east-1',
+	dag=dag
+)
+start_operator >> copy_etl_to_s3 >> step_adder >> step_sensor
+
+insert_fact_table = AWSAthenaOperator(task_id='insert_fact_table_product_ratings',
+										dag=dag,
+										query="./queries/fact_table.sql",
+										database='pet_supplies',
+										pool='athena',
+										output_location='s3://capstone-project-data/athena_query_result_location/',
+										aws_conn_id='aws_udacity',
+										sleep_time=10,
+									)
+
+DIMENSION_TABLES = ['brand', 'category',
+						'main_category', 'time', 'ratings', 'products']
+
+for table in DIMENSION_TABLES:
+	check_null_data = AthenaQualityChecksOperator(task_id='check_null_data_'+table,
 													  dag=dag,
 													  aws_conn_id='aws_udacity',
 													  region_name='us-east-1',
 													  output_location='s3://capstone-project-data/athena_query_result_location/',
 													  database='pet_supplies',
-													  query=f'./queries/data_quality/{table}_distinct.sql',
-													  expected_value='true',
-													  #pool=1
+													  query='./queries/data_quality/'+table+'_null_ids.sql',
+													  expected_value='0')
+	if table != 'products':
+		check_distinct_data = AthenaQualityChecksOperator(task_id='check_distinct_data_'+table,
+													  dag=dag,
+													  aws_conn_id='aws_udacity',
+													  region_name='us-east-1',
+													  output_location='s3://capstone-project-data/athena_query_result_location/',
+													  database='pet_supplies',
+													  query='./queries/data_quality/'+table+'_distinct.sql',
+													  expected_value='true'
 													  )
-													  
-	#step_sensor >> check_distinct_data
+		check_null_data >> check_distinct_data >> insert_fact_table
+	step_sensor >> check_null_data >> insert_fact_table
+	

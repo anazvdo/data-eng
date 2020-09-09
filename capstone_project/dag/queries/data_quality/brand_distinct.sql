@@ -6,8 +6,8 @@ SELECT
 FROM
     (
         SELECT
-            count(*),
-            count(distinct brand_id)
+            count(*) as total,
+            count(distinct brand_id) as distinct_values
         FROM
             brand
     )
