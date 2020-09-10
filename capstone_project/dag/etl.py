@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from pyspark.sql import SparkSession, Row, Window
 from pyspark.sql.functions import udf, col, row_number, translate
@@ -8,9 +9,8 @@ from pyspark.sql.functions import explode, regexp_replace
 from pyspark import SparkConf
 from pyspark import SparkContext
 
-def read_and_clean_json(spark):
-    df = spark.read.json('s3a://capstone-project-data/meta_Pet_Supplies.json')
-    
+def read_and_clean_json(spark, input_json_path):
+    df = spark.read.json(input_json_path)    
     df = df.withColumn("tmp", arrays_zip("category", "description", "image")) \
         .withColumn("tmp", explode("tmp")) \
         .select("asin", col("tmp.category"), col("tmp.description"), col("tmp.image"), "title", "brand", "main_cat", "price") \
@@ -22,9 +22,9 @@ def read_and_clean_json(spark):
         .withColumn('price', col('price').cast("double"))
     return df
 
-def read_and_clean_csv(spark):
+def read_and_clean_csv(spark, input_csv_path):
     get_timestamp = udf(lambda x:  datetime.fromtimestamp(x).strftime('%Y-%m-%d %H:%M:%S'))
-    df_csv = spark.read.csv("s3a://capstone-project-data/ratings_Pet_Supplies.csv")
+    df_csv = spark.read.csv(input_csv_path)
     df_csv = df_csv.withColumnRenamed('_c0', 'reviewer_id')\
                 .withColumnRenamed('_c1', 'product_id')\
                 .withColumnRenamed('_c2', 'rating')\
@@ -34,35 +34,35 @@ def read_and_clean_csv(spark):
     df_csv = df_csv.withColumn('start_time', get_timestamp(df_csv.timestamp))
     return df_csv
 
-def category_data(df, output_path):
+def category_data(df, output_path, s3_partition):
     window = Window.orderBy(col('category'))
     category_table = df.select(['category']) \
                     .where(col('category').isNotNull()) \
                     .dropDuplicates() \
                     .withColumn('category_id', row_number().over(window))
 
-    category_table.repartition(5).write.parquet(output_path+'category/', 'overwrite')
+    category_table.repartition(5).write.parquet(output_path+'category/'+s3_partition, 'overwrite')
     return category_table
 
-def brand_data(df, output_path):
+def brand_data(df, output_path,s3_partition):
     window = Window.orderBy(col('brand'))
     brand_table = df.select(['brand']) \
                     .where(col('brand').isNotNull()) \
                     .dropDuplicates() \
                     .withColumn('brand_id', row_number().over(window))
-    brand_table.repartition(5).write.parquet(output_path+'brand/', 'overwrite')
+    brand_table.repartition(5).write.parquet(output_path+'brand/'+s3_partition, 'overwrite')
     return brand_table
 
-def main_category_data(df, output_path):
+def main_category_data(df, output_path, s3_partition):
     window = Window.orderBy(col('main_cat'))
     main_cat_table = df.select(['main_cat']) \
                         .where(col('main_cat').isNotNull()) \
                         .dropDuplicates() \
                         .withColumn('main_cat_id', row_number().over(window))
-    main_cat_table.repartition(5).write.parquet(output_path+'main_category/', 'overwrite')
+    main_cat_table.repartition(5).write.parquet(output_path+'main_category/'+s3_partition, 'overwrite')
     return main_cat_table
 
-def product_data(df, output_path, category_table, brand_table, main_cat_table):
+def product_data(df, output_path, s3_partition, category_table, brand_table, main_cat_table):
     products = df.select('asin', 'title', 'description', 'image', 'brand', 'category', 'main_cat', 'price') \
              .withColumn('brand', translate('brand', '&amp;', '&')) \
              .withColumn('category', translate('category', '&amp;', '&')) \
@@ -75,9 +75,9 @@ def product_data(df, output_path, category_table, brand_table, main_cat_table):
                             .join(main_cat_table, on=['main_cat'], how='left') \
                             .drop('brand', 'category', 'main_cat')  
                             
-    products_data.repartition(10).write.parquet(output_path+'products/', 'overwrite')
+    products_data.repartition(10).write.parquet(output_path+'products/'+s3_partition, 'overwrite')
 
-def time_data(df_csv, output_path):
+def time_data(df_csv, output_path, s3_partition):
     time_table =  df_csv.withColumn('year', year('start_time')) \
                     .withColumn('month', month('start_time')) \
                     .withColumn('day', dayofmonth('start_time')) \
@@ -85,30 +85,34 @@ def time_data(df_csv, output_path):
                     .withColumn('weekday', dayofweek('start_time')) \
                     .select('timestamp', 'start_time', 'year', 'month', 'day', 'hour', 'weekday') \
                     .dropDuplicates(["timestamp"])
-    time_table.repartition(5).write.parquet(output_path+'time/', 'overwrite')
+    time_table.repartition(5).write.parquet(output_path+'time/'+s3_partition, 'overwrite')
 
-def ratings_data(df_csv, output_path):
+def ratings_data(df_csv, output_path, s3_partition):
     ratings_table = df_csv.select(['reviewer_id', 'product_id', 'rating', 'start_time'])
-    ratings_table.repartition(10).write.parquet(output_path+'ratings/', 'overwrite')
+    ratings_table.repartition(10).write.parquet(output_path+'ratings/'+s3_partition, 'overwrite')
 
 
 def main():
-    output_path='s3://capstone-project-data/data_modeling/'
+    output_path= os.getenv('OUTPUT_S3_PATH')
+    s3_partition= os.getenv('S3_PARTITION')
+    input_json_path = os.getenv('INPUT_JSON_PATH')
+    input_csv_path = os.getenv('INPUT_CSV_PATH')
 
     spark = SparkSession \
             .builder \
             .getOrCreate()
+
     #JSON File and Tables
-    df = read_and_clean_json(spark)
-    category_table = category_data(df, output_path)
-    brand_table = brand_data(df, output_path)
-    main_cat_table = main_category_data(df, output_path)
-    product_data(df, output_path, category_table, brand_table, main_cat_table)
+    df = read_and_clean_json(spark, input_json_path)
+    category_table = category_data(df, output_path, s3_partition)
+    brand_table = brand_data(df, output_path, s3_partition)
+    main_cat_table = main_category_data(df, output_path, s3_partition)
+    product_data(df, output_path, s3_partition, category_table, brand_table, main_cat_table)
 
     #CSV File and Tables
-    df_csv = read_and_clean_csv(spark)
-    time_data(df_csv, output_path)
-    ratings_data(df_csv, output_path)
+    df_csv = read_and_clean_csv(spark, input_csv_path)
+    time_data(df_csv, output_path, s3_partition)
+    ratings_data(df_csv, output_path, s3_partition)
 
 if __name__ == "__main__":
     main()

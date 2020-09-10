@@ -9,7 +9,8 @@ SELECT p.product_id,
          mc.main_cat,         
          t.year,
          t.month,
-         t.day
+         t.day,
+         '{{ ds_nodash }}' as ymd
 FROM products p
 LEFT JOIN brand b
     ON b.brand_id = p.brand_id

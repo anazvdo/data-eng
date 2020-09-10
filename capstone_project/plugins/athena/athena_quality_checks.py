@@ -10,6 +10,23 @@ from botocore.exceptions import ClientError
 
 
 class AthenaQualityChecksOperator(BaseOperator):
+    '''
+    Operator to check Data Quality based on Athena tables.
+    Requires a query that returns one value that will be compared with an expected one.
+
+    :param aws_conn_id: Connection id of the aws connection to use
+    :type aws_conn_id: str
+    :param region_name: Region name of Athena tables
+    :type region_name: str
+    :param output_location: S3 path to save athena logs
+    :type output_location: str
+    :param database: Athena database
+    :type database: str
+    :param query: Presto to be run on athena. It must return 1 value(1 row and 1 column). (templated)
+    :type query: str
+    :param expected_value: expected value to be compared with value returned by query
+    :type expected_value: str
+    '''
     template_fields=['query']
     template_ext = ('.sql',)
 
@@ -32,6 +49,9 @@ class AthenaQualityChecksOperator(BaseOperator):
         self.expected_value = expected_value
     
     def create_client(self):
+        '''
+            Create Athena Client
+        '''
         extras = BaseHook.get_connection(self.aws_conn_id).extra_dejson
         aws_session_token=''
         if len(extras) > 0:
@@ -45,19 +65,13 @@ class AthenaQualityChecksOperator(BaseOperator):
         logging.info("Athena Client is created")
         return client
 
-    def start_query(client, self):
-        response = client.start_query_execution(
-                            QueryString=self.query,
-                            QueryExecutionContext={
-                                'Database': self.database
-                            },
-                            ResultConfiguration={
-                                'OutputLocation': self.output_location,
-                            }
-        )
-        return response.get('QueryExecutionId')
 
     def execute(self, context):
+        '''
+            Execute Query and waits until its success.
+            If query fails or is cancelled, this function raises erros.
+        '''
+
         client = self.create_client()
         
         #Get query results
@@ -96,7 +110,9 @@ class AthenaQualityChecksOperator(BaseOperator):
         
 
 
-# Defining the plugin class
 class AthenaQualityChecksPlugin(AirflowPlugin):
+    '''
+        Create Plugin
+    '''
     name = "athena_quality_checks"
     operators = [AthenaQualityChecksOperator]
