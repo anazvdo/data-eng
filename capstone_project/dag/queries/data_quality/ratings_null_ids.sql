@@ -2,5 +2,6 @@ select
     count(*)
 from
     ratings
-where
-    reviewer_id is null
+WHERE
+    ymd = '{{ ds_nodash }}'
+    AND reviewer_id is null

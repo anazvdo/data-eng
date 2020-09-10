@@ -9,6 +9,17 @@ from airflow.utils import apply_defaults
 
 
 class CustomStepStateOperator(BaseOperator):
+    '''
+    Operator to check if Step is succeeded
+    :param aws_conn_id: Connection id of the aws connection to use
+    :type aws_conn_id: str
+    :param region_name: Region name of Athena tables
+    :type region_name: str
+    :param step_id: id of step
+    :type step_id: list
+    :param job_flow_name: id of job flow
+    :type job_flow_id: str
+    '''
     template_fields = ['job_flow_id', 'step_id']
     ui_color = '#40e0d0'
     @apply_defaults
@@ -25,6 +36,9 @@ class CustomStepStateOperator(BaseOperator):
         self.step_id = step_id
     
     def create_client(self):
+        '''
+        Crete EMR Client
+        '''
         extras = BaseHook.get_connection(self.aws_conn_id).extra_dejson
         aws_session_token=''
         if len(extras) > 0:
@@ -39,6 +53,9 @@ class CustomStepStateOperator(BaseOperator):
         return client
 
     def execute(self, context):
+        '''
+        Get Status of Step while it is not COMPLETED
+        '''
         client = self.create_client()
         step_state=''
 
@@ -61,5 +78,8 @@ class CustomStepStateOperator(BaseOperator):
 
 # Defining the plugin class
 class CustomStepStatePlugin(AirflowPlugin):
+    '''
+    StepState Plugin
+    '''
     name = "custom_emr_step_state_plugin"
     operators = [CustomStepStateOperator]

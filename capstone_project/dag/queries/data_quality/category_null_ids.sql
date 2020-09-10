@@ -3,4 +3,5 @@ select
 from
     category
 where
-    category_id is null
+    ymd = '{{ ds_nodash }}'
+    and category_id is null

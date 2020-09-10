@@ -10,4 +10,5 @@ FROM
             count(distinct timestamp) AS distinct_values
         FROM
             time
+        WHERE ymd='{{ ds_nodash }}'
     )

@@ -10,4 +10,5 @@ FROM
             count(distinct concat(reviewer_id, product_id)) as distinct_values
         FROM
             ratings
+        WHERE ymd='{{ ds_nodash }}'
     )

@@ -2,5 +2,6 @@ select
     count(*)
 from
     main_category
-where
-    main_cat_id is null
+WHERE
+    ymd = '{{ ds_nodash }}'
+    AND main_cat_id is null

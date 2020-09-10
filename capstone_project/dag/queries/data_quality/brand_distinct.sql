@@ -10,4 +10,5 @@ FROM
             count(distinct brand_id) as distinct_values
         FROM
             brand
+        WHERE ymd='{{ ds_nodash }}'
     )

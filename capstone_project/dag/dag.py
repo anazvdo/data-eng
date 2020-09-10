@@ -88,7 +88,7 @@ default_args = {
 
 dag = DAG('datalake_amazon_pet_supplies_reviews',
 		  default_args=default_args,
-		  description='Load and transform data in Redshift with Airflow',
+		  description='ETL Process using Pyspark on EMR to load Amazon Pet Supplies Data',
 		  schedule_interval='0 7 * * *',
 		  max_active_runs=1,
 		  catchup=False

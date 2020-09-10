@@ -10,4 +10,5 @@ FROM
             count(distinct main_cat_id) as distinct_values
         FROM
             main_category
+        WHERE ymd='{{ ds_nodash }}'
     )

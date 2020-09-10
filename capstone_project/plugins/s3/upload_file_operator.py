@@ -9,6 +9,18 @@ from botocore.exceptions import ClientError
 
 
 class UploadFileToS3Operator(BaseOperator):
+    '''
+    Operator to Upload local file to S3 path
+    type aws_conn_id: str
+    :param region_name: Region name of Athena tables
+    :type region_name: str
+    :param local_path: local path where is the file to be uploaded
+    :type local_path: str
+    :param s3_bucket_name: name of s3 bucket
+    :type s3_bucket_name: str
+    :param s3_prefix: prefix of s3 path
+    :type s3_prefix: str
+    '''
     ui_color = '#f47321'
     @apply_defaults
     def __init__(self,
@@ -26,6 +38,9 @@ class UploadFileToS3Operator(BaseOperator):
         self.s3_prefix = s3_prefix
     
     def create_client(self):
+        '''
+        Create S3 Client
+        '''
         extras = BaseHook.get_connection(self.aws_conn_id).extra_dejson
         aws_session_token=''
         if len(extras) > 0:
@@ -40,6 +55,9 @@ class UploadFileToS3Operator(BaseOperator):
         return client
 
     def execute(self, context):
+        '''
+        Upload file
+        '''
         client = self.create_client()
         # Upload the file
         try:
@@ -56,5 +74,8 @@ class UploadFileToS3Operator(BaseOperator):
 
 # Defining the plugin class
 class UploadFileToS3Plugin(AirflowPlugin):
+    '''
+    Upload File Plugin
+    '''
     name = "upload_file_to_s3"
     operators = [UploadFileToS3Operator]

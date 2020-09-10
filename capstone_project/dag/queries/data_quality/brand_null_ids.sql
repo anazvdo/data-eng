@@ -3,4 +3,5 @@ select
 from
     brand
 where
-    brand_id is null
+    ymd = '{{ ds_nodash }}'
+    and brand_id is null

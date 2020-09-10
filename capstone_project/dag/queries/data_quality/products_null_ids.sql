@@ -2,5 +2,6 @@ select
     count(*)
 from
     products
-where
-    product_id is null
+WHERE
+    ymd = '{{ ds_nodash }}'
+    AND product_id is null

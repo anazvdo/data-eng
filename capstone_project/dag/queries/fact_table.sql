@@ -22,3 +22,4 @@ LEFT JOIN ratings r
     ON p.product_id = r.product_id
 LEFT JOIN time t
     ON t.start_time = r.start_time 
+where p.ymd='{{ ds_nodash }}'

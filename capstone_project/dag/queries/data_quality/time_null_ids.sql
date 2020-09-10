@@ -2,5 +2,6 @@ select
     count(*)
 from
     time
-where
-    timestamp is null
+WHERE
+    ymd = '{{ ds_nodash }}'
+    AND timestamp is null
