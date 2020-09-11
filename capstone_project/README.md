@@ -41,15 +41,15 @@ Empirical Methods in Natural Language Processing (EMNLP), 2019
 
 ### 3. End use cases and goals
 <div style="text-align: justify">
-The project's purpose and its end use case is a datalake filled by an Airflow pipeline running on schedule, extracting all raw data coming from json and csv sources using PySpark on AWS EMR, transformed into files on AWS S3, then in dimension and fact tables on AWS Athena. As a fact table, this can also be uses as analytics table to answer business questions.
+The project's purpose and its end use case is a datalake filled by an Airflow pipeline running on schedule, extracting all raw data coming from json and csv sources using PySpark on AWS EMR, transformed into files on AWS S3, then in dimension and fact tables on AWS Athena. As a fact table, this can also be used as analytics table to answer business questions.
 </div>
 <br/>
 
 ### 4. Choice of Technologies
-- Airflow: great tool to orchestrate pipelines on schedule
-- AWS EMR: helps processing vast amounts of data usings Apache Spark
-- AWS S3: object storage service is used to save parquet files
-- AWS Athena: can query S3 data using SQL, so we can have a Datalake
+- Airflow: great tool to orchestrate pipelines on schedule;
+- AWS EMR: helps processing vast amounts of data usings Apache Spark;
+- AWS S3: object storage service is used to save parquet files;
+- AWS Athena: can query S3 data using SQL, so we can have a Datalake;
 - AWS Glue: was used to create for the first time, dimension tables on Athena, with automatic crawlers.
 
 ### 5. Exploring and Assessing the Data
@@ -110,6 +110,7 @@ Its schedule is everyday at 7am(UTC), so data can be extracted on a daily basis.
 - If the pipelines were run on a daily basis by 7am: it's already running;
 - If the database needed to be accessed by 100+ people: AWS Redshift with Spectrum might help in this case because Spectrum allows Redshift to read Athena schemas(each person should have her/his access to Redshift and decrease the possibility of AWS Account creation for each one).
 <br/>
+
 ### 9. EXTRA: Analytical uses for this Datalake
 <p>Since we have all raw data in this datalake, we can analyze some information in fact table product_ratings for decision making.</p>
 Examples:
