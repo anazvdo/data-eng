@@ -3,7 +3,7 @@
 <br/>
 
 ### 1. Project Scope
-<div style="text-align: justify"> One of the Amazon focuses is the e-commerce. As well as being an online retailer, Amazon allows for individuals and business to sell and display products for sale online. 
+<div style="text-align: justify"> One the Amazon's focuses is e-commerce. As well as being an online retailer, Amazon allows for individuals and business to sell and display products for sale online. 
 There are many categories of products, but this project is referring to <b>Pet Supplies</b>.  
 
 Amazon needs to keep track of information about pet products in the catalog, their descriptions, prices, ratings and how all this data can become something valueble to decision making. As a good example of this, we have the performance of brands that should be analyzed: based on product data and ratings, which brands that perform better or worse? So the company can always work with the best products, have their customers satisfied and improve their services. </div>
